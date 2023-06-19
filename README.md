@@ -1,3 +1,3 @@
-# WebTemplate
+# HyperHost
 
 A web template.
