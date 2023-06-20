@@ -26,7 +26,7 @@
         if (invite_code !== "") {
             const conn = peer.connect(invite_code);
             onOpen(conn, invite_code);
-            onData(conn, conn.peer);
+            onData(conn, invite_code);
         }
 
         // Another peer contacts you
@@ -82,7 +82,13 @@
                     peer_state[peer_code] = data.peer_state[peer_code];
                 }
             }
-            
+
+        });
+    }
+
+    function onError(conn, code) {
+        conn.on('error', function(_err) {
+            removePeer(code);
         });
     }
 
@@ -120,6 +126,7 @@
             peer_list[code].conn = conn;
             onOpen(conn, conn.peer);
             onData(conn, conn.peer);
+            onError(conn, conn.peer);
 
         } else {
             const conn = peer_list[code].conn;
@@ -132,9 +139,10 @@
 
     // Remove peers you haven't heard from in awhile
     setInterval(() => {
-
+        
+        const now = Date.now();
         if (isSelfHost()) {
-            const now = Date.now();
+            
             const removals = [];
             for (let peer_code in peer_time) {
                 if (peer_code === self_code) continue;
@@ -155,7 +163,12 @@
         } else {
             const host_code = getHost();
             createMaybeAndSend(host_code);
-            
+
+            if (host_code in peer_time) {
+                if (now - peer_time[host_code] > REMOVE_TIME_MS) {
+                    removePeer(host_code);
+                }
+            }
         }
 
     }, REMOVE_TIME_MS/2);
